@@ -17,7 +17,7 @@ class Game extends React.Component {
     state = {
         cells: [],
         simulationRunning: false,
-        refreshInterval: 50,
+        refreshInterval: 200,
     }
 
     runGame = () => {
@@ -27,14 +27,27 @@ class Game extends React.Component {
 
     stopGame = () => {
         this.setState({simulationRunning: false});
+        if (this.timeoutHandler) {
+            window.clearTimeout(this.timeoutHandler);
+            this.timeoutHandler = null;
+        }
     }
 
     runIteration() {
         let newGrid = this.makeEmptyGrid();
 
+        /*
+        Rules:
+            1. Any live cell with fewer than two live neighbors dies, as if caused by under population.
+            2. Any live cell with two or three live neighbors lives on to the next generation.
+            3. Any live cell with more than three live neighbors dies, as if by overpopulation.
+            4. Any dead cell with exactly three live neighbors becomes a live cell, as if by reproduction.
+        */
+
         for (let row = 0; row < this.rowCount; row++) {
             for (let column = 0; column < this.columnCount; column++) {
                 let activeNeighouringCells = this.getActiveNeighboursCount(this.grid, column, row);
+                console.log(activeNeighouringCells);
                 if (this.grid[column][row]) {
                     if (activeNeighouringCells === 2 || activeNeighouringCells === 3)
                         newGrid[column][row] = true;
@@ -43,6 +56,7 @@ class Game extends React.Component {
                 } else if (!this.grid[column][row] && activeNeighouringCells === 3) {
                     newGrid[column][row] = true;
                 }
+
             }
         }
 
@@ -50,6 +64,7 @@ class Game extends React.Component {
         this.setState({cells: this.makeCellsArray()});
         this.timeoutHandler = window.setTimeout(() => {this.runIteration();}, this.state.refreshInterval);
     }
+
 
     getActiveNeighboursCount(grid, xPos, yPos) {
         let count = 0;
@@ -65,7 +80,6 @@ class Game extends React.Component {
                     count++;
             }
         }
-
         return count;
     }
 
@@ -121,26 +135,47 @@ class Game extends React.Component {
         this.setState({refreshInterval: changeEvent.target.value});
     }
 
+    handleRandomActiveCells = () => {
+        for (let row = 0; row < this.rowCount; row++) {
+            for (let column = 0; column < this.columnCount; column++) {
+                if (Math.random() < 0.5)
+                    this.grid[column][row] = true; // make active
+                else
+                    this.grid[column][row] = false; // make inactive
+            }
+        }
+        this.setState({cells: this.makeCellsArray()});
+    }
+
     render() {
         const {cells, simulationRunning, refreshInterval} = this.state;
 
         return ( 
-            <div> <div id="grid"
-            style={
-                {
-                    width: GRID_WIDTH,
-                    height: GRID_HEIGHT,
-                    backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`
-                }
-            } 
-            onClick={this.handleGridClick} 
-            ref={(loc) => { this.gridLocation = loc; }}>
+            <div> 
+                <div id="form">
+                    {
+                        simulationRunning ?
+                            <button onClick={this.stopGame}>Stop Game</button> :
+                            <button onClick={this.runGame}>Run Game</button>
+                    }
+                    <button onClick={this.handleRandomActiveCells}>Random Active</button>
+                </div>
+                <div id="grid"
+                    style={
+                        {
+                            width: GRID_WIDTH,
+                            height: GRID_HEIGHT,
+                            backgroundSize: `${CELL_SIZE}px ${CELL_SIZE}px`
+                        }
+                    } 
+                    onClick={this.handleGridClick} 
+                    ref={(loc) => { this.gridLocation = loc; }}>
 
-            {cells.map(cell => (
-                    <GridCell xCoord={cell.column} yCoord={cell.row} key={`${cell.column},${cell.row}`}/>
-                ))}
-
-            </div> </div> );
+                    {cells.map(cell => (
+                            <GridCell xCoord={cell.column} yCoord={cell.row} key={`${cell.column},${cell.row}`}/>
+                        ))}
+                </div>
+            </div> );
     }
 
 }
