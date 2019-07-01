@@ -16,8 +16,57 @@ class Game extends React.Component {
 
     state = {
         cells: [],
-        isRunning: false,
+        simulationRunning: false,
         refreshInterval: 50,
+    }
+
+    runGame = () => {
+        this.setState({simulationRunning: true});
+        this.runIteration();
+    }
+
+    stopGame = () => {
+        this.setState({simulationRunning: false});
+    }
+
+    runIteration() {
+        let newGrid = this.makeEmptyGrid();
+
+        for (let row = 0; row < this.rowCount; row++) {
+            for (let column = 0; column < this.columnCount; column++) {
+                let activeNeighouringCells = this.getActiveNeighboursCount(this.grid, column, row);
+                if (this.grid[column][row]) {
+                    if (activeNeighouringCells === 2 || activeNeighouringCells === 3)
+                        newGrid[column][row] = true;
+                    else
+                        newGrid[column][row] = false;
+                } else if (!this.grid[column][row] && activeNeighouringCells === 3) {
+                    newGrid[column][row] = true;
+                }
+            }
+        }
+
+        this.grid = newGrid;
+        this.setState({cells: this.makeCellsArray()});
+        this.timeoutHandler = window.setTimeout(() => {this.runIteration();}, this.state.refreshInterval);
+    }
+
+    getActiveNeighboursCount(grid, xPos, yPos) {
+        let count = 0;
+        for (let xAdd = -1; xAdd <= 1; xAdd++) {
+            for (let yAdd = -1; yAdd <= 1; yAdd++) {
+                let x = xPos + xAdd;
+                let y = yPos + yAdd;
+
+                if (!(x === 0 && y === 0) && 
+                    (x >= 0 && x < this.columnCount) && 
+                    (y >= 0 && y < this.rowCount) && 
+                    (grid[y][x]))
+                    count++;
+            }
+        }
+
+        return count;
     }
 
     makeEmptyGrid() {
@@ -65,10 +114,16 @@ class Game extends React.Component {
             this.grid[y][x] = !this.grid[y][x]; // 
         }
 
-        this.setGridState({ cells: this.makeCellsArray() });
+        this.setState({cells: this.makeCellsArray()});
+    }
+
+    handleNewRefreshInterval = (changeEvent) => {
+        this.setState({refreshInterval: changeEvent.target.value});
     }
 
     render() {
+        const {cells, simulationRunning, refreshInterval} = this.state;
+
         return ( 
             <div> <div id="grid"
             style={
@@ -80,22 +135,28 @@ class Game extends React.Component {
             } 
             onClick={this.handleGridClick} 
             ref={(loc) => { this.gridLocation = loc; }}>
+
+            {cells.map(cell => (
+                    <GridCell xCoord={cell.column} yCoord={cell.row} key={`${cell.column},${cell.row}`}/>
+                ))}
+
             </div> </div> );
     }
+
 }
 
 class GridCell extends React.Component {
 
     render() {
-        const {x, y} = this.props; // takes value of spread attribute to make the passing of properties easier
+        const {xCoord ,yCoord} = this.props; // takes value of spread attribute to make the passing of properties easier
         return (
-            <div id="cell" style={{
-                left: `${CELL_SIZE * x + 1}px`,
-                top: `${CELL_SIZE * y + 1}px`,
+            <div className="cell" style={{
+                left: `${CELL_SIZE * xCoord + 1}px`,
+                top: `${CELL_SIZE * yCoord + 1}px`,
                 width: `${CELL_SIZE - 1}px`,
                 height: `${CELL_SIZE - 1}px`,
             }} />
-        );
+        ); // takes into account the grids lines with +- 1px value
     }
 
 }
