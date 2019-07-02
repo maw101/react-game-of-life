@@ -1,6 +1,6 @@
 # ReactGameOfLife
 
-An implementatino of [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) using React.
+An implementation of [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) using React.
 
 The game of life is a cellular automaton model which observes how cells evolve from an initial configuration of live and dead cells.
 
